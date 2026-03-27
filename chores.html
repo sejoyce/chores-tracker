@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chore Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --warm-white: #faf7f2;
+    --sage: #8a9e7e;
+    --sage-light: #b8c9b0;
+    --sage-dark: #5a7050;
+    --terracotta: #c2714a;
+    --terracotta-light: #e8b89a;
+    --brown: #6b4c35;
+    --brown-light: #a07858;
+    --ink: #2c2416;
+    --ink-light: #5c4c38;
+    --dusty-rose: #c9a09a;
+    --gold: #c8a84b;
+    --shadow: rgba(44,36,22,0.12);
+    --shadow-strong: rgba(44,36,22,0.22);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 10% 10%, rgba(138,158,126,0.18) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 85%, rgba(194,113,74,0.12) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236b4c35' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  header {
+    text-align: center;
+    padding: 3rem 1rem 1.5rem;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    color: var(--brown);
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+  header h1 span {
+    font-style: italic;
+    color: var(--sage-dark);
+  }
+  header p {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--ink-light);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+  }
+
+  /* TABS */
+  .tabs-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 0 1rem 0;
+    margin-bottom: 1.5rem;
+  }
+  .tabs {
+    display: inline-flex;
+    background: white;
+    border-radius: 100px;
+    padding: 4px;
+    box-shadow: 0 2px 12px var(--shadow);
+    gap: 2px;
+  }
+  .tab-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    border: none;
+    border-radius: 100px;
+    padding: 0.5rem 1.25rem;
+    cursor: pointer;
+    background: transparent;
+    color: var(--ink-light);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--ink); background: var(--cream); }
+  .tab-btn.active {
+    background: var(--brown);
+    color: white;
+    box-shadow: 0 2px 8px var(--shadow-strong);
+  }
+  .tab-btn .tab-emoji { margin-right: 0.35rem; }
+
+  .tab-rename {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.6);
+    padding: 0 0 0 0.2rem;
+    border-radius: 4px;
+    transition: color 0.15s;
+    display: none;
+  }
+  .tab-btn.active .tab-rename { display: inline; }
+  .tab-rename:hover { color: white; }
+
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0 1rem 2rem;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    border: none;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background: var(--terracotta);
+    color: white;
+    padding: 0.6rem 1.4rem;
+    box-shadow: 0 2px 8px rgba(194,113,74,0.35);
+  }
+  .btn-primary:hover { background: #b06040; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(194,113,74,0.4); }
+
+  .btn-secondary {
+    background: white;
+    color: var(--ink);
+    padding: 0.6rem 1.4rem;
+    border: 1.5px solid rgba(107,76,53,0.2);
+  }
+  .btn-secondary:hover { background: var(--warm-white); border-color: var(--brown-light); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-light);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.78rem;
+  }
+  .btn-ghost:hover { color: var(--terracotta); }
+
+  .columns {
+    display: flex;
+    gap: 1.25rem;
+    padding: 0 1.25rem 3rem;
+    overflow-x: auto;
+    align-items: flex-start;
+    min-height: 60vh;
+  }
+
+  .column {
+    background: white;
+    border-radius: 18px;
+    min-width: 260px;
+    width: 260px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 20px var(--shadow);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .column.drag-over {
+    box-shadow: 0 4px 28px rgba(138,158,126,0.45);
+    outline: 2.5px dashed var(--sage);
+  }
+
+  .col-header {
+    padding: 1.1rem 1.2rem 0.8rem;
+    border-bottom: 1.5px solid var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .col-header-left { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
+
+  .col-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .col-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--brown);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .col-meta {
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    font-weight: 300;
+    padding: 0 1.2rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .reset-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--cream);
+    border-radius: 100px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .reset-badge:hover { background: #ebe4d6; }
+  .reset-badge.overdue { background: #fde8df; color: var(--terracotta); }
+
+  .chores-list {
+    padding: 0.5rem 0.8rem 0.8rem;
+    min-height: 60px;
+  }
+
+  .chore-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    margin-bottom: 0.3rem;
+    cursor: grab;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    user-select: none;
+    background: transparent;
+    position: relative;
+  }
+  .chore-item:hover { background: var(--cream); }
+  .chore-item.dragging {
+    opacity: 0.45;
+    transform: scale(0.97);
+  }
+
+  .chore-check {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    border: 1.8px solid var(--sage-light);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    background: white;
+  }
+  .chore-check.checked {
+    background: var(--sage);
+    border-color: var(--sage);
+  }
+  .chore-check.checked::after {
+    content: '';
+    width: 5px; height: 9px;
+    border: 2px solid white;
+    border-top: none; border-left: none;
+    transform: rotate(42deg) translateY(-1px);
+    display: block;
+  }
+
+  .chore-label {
+    font-size: 0.875rem;
+    color: var(--ink);
+    flex: 1;
+    line-height: 1.35;
+    transition: color 0.15s;
+  }
+  .chore-label.done {
+    color: var(--sage-light);
+    text-decoration: line-through;
+    text-decoration-color: var(--sage-light);
+  }
+
+  .chore-delete {
+    opacity: 0;
+    background: none;
+    color: var(--dusty-rose);
+    font-size: 1rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    transition: opacity 0.15s;
+  }
+  .chore-item:hover .chore-delete { opacity: 1; }
+  .chore-delete:hover { background: #f8ecec; }
+
+  .add-chore-row {
+    padding: 0 0.8rem 0.8rem;
+    display: flex;
+    gap: 0.4rem;
+  }
+  .add-chore-input {
+    flex: 1;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    padding: 0.5rem 0.75rem;
+    border: 1.5px solid rgba(107,76,53,0.15);
+    border-radius: 8px;
+    background: var(--cream);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .add-chore-input::placeholder { color: #b0a090; }
+  .add-chore-input:focus { border-color: var(--sage); }
+
+  .btn-add-chore {
+    background: var(--sage);
+    color: white;
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: background 0.15s;
+  }
+  .btn-add-chore:hover { background: var(--sage-dark); }
+
+  .col-footer {
+    border-top: 1.5px solid var(--cream);
+    padding: 0.5rem 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .progress-text { font-size: 0.72rem; color: var(--ink-light); }
+  .progress-bar-wrap {
+    width: 80px; height: 4px;
+    background: var(--cream);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 10px;
+    background: var(--sage);
+    transition: width 0.4s ease;
+  }
+
+  /* Add frequency modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(44,36,22,0.4);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    width: min(420px, 92vw);
+    box-shadow: 0 20px 60px var(--shadow-strong);
+    animation: modal-in 0.25s ease;
+  }
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.93) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--brown);
+    margin-bottom: 0.3rem;
+  }
+  .modal p { font-size: 0.83rem; color: var(--ink-light); margin-bottom: 1.4rem; }
+
+  .form-field { margin-bottom: 1rem; }
+  .form-field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-light);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .form-field input, .form-field select {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.65rem 0.9rem;
+    border: 1.5px solid rgba(107,76,53,0.18);
+    border-radius: 10px;
+    background: var(--cream);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--sage); }
+
+  .color-swatches {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+  }
+  .color-swatch {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 2.5px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .color-swatch.selected { border-color: var(--ink); transform: scale(1.15); }
+
+  .modal-actions { display: flex; gap: 0.7rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+  .add-col-btn {
+    min-width: 200px;
+    width: 200px;
+    background: white;
+    border: 2px dashed rgba(107,76,53,0.2);
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    flex-shrink: 0;
+    color: var(--ink-light);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+  }
+  .add-col-btn:hover { border-color: var(--sage); background: #f0f4ee; color: var(--sage-dark); }
+  .add-col-btn span { font-size: 1.8rem; line-height: 1; }
+
+  .drag-placeholder {
+    border: 2px dashed var(--sage-light);
+    border-radius: 10px;
+    height: 36px;
+    margin-bottom: 0.3rem;
+    background: #f0f4ee;
+  }
+
+  @media (max-width: 600px) {
+    .columns { padding: 0 0.75rem 2rem; gap: 1rem; }
+    header { padding: 2rem 1rem 1rem; }
+  }
+</style>
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+    apiKey: import.meta.env.FIREBASE_API_KEY,
+    authDomain: import.meta.env.FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.FIREBASE_APP_ID,
+    };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const docRef = doc(db, "chores", "shared-state");
+
+  // Override saveState to write to Firestore
+  window.saveStateRemote = async (stateObj) => {
+    await setDoc(docRef, { data: JSON.stringify(stateObj) });
+  };
+
+  // Listen for real-time updates from partner
+  onSnapshot(docRef, (snap) => {
+    if (snap.exists()) {
+      const remote = JSON.parse(snap.data().data);
+      // Only update if different from local to avoid loops
+      if (JSON.stringify(remote) !== JSON.stringify(window._lastSaved)) {
+        window._choreState = remote;
+        if (window.loadRemoteState) window.loadRemoteState(remote);
+      }
+    }
+  });
+</script>
+</head>
+<body>
+
+<header>
+  <h1>Chores</h1>
+</header>
+
+<!-- Setup Modal (first time) -->
+<div class="modal-overlay" id="setup-modal">
+  <div class="modal">
+    <h2>Welcome Home 🏡</h2>
+    <p>Enter your names to personalise your chore tabs.</p>
+    <div class="form-field">
+      <label>Your name</label>
+      <input type="text" id="setup-p1" placeholder="e.g. Alex">
+    </div>
+    <div class="form-field">
+      <label>Partner's name</label>
+      <input type="text" id="setup-p2" placeholder="e.g. Jordan">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveSetup()">Let's go →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Tab Modal -->
+<div class="modal-overlay" id="rename-modal">
+  <div class="modal">
+    <h2>Rename Tab</h2>
+    <p>Enter a new name for this person's tab.</p>
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="rename-input" placeholder="e.g. Jordan">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeRename()">Cancel</button>
+      <button class="btn-primary" onclick="saveRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" onclick="switchTab('shared')" id="tab-shared">
+      <span class="tab-emoji">🏠</span>Shared
+    </button>
+    <button class="tab-btn" onclick="switchTab('p1')" id="tab-p1">
+      <span class="tab-emoji">👤</span><span id="tab-p1-label">Person 1</span>
+      <span class="tab-rename" onclick="openRename('p1',event)" title="Rename">✎</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('p2')" id="tab-p2">
+      <span class="tab-emoji">👤</span><span id="tab-p2-label">Person 2</span>
+      <span class="tab-rename" onclick="openRename('p2',event)" title="Rename">✎</span>
+    </button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn-primary" onclick="openAddFreq()">＋ New Frequency</button>
+  <button class="btn-secondary" onclick="resetAll()">↺ Reset All Overdue</button>
+</div>
+
+<div class="columns" id="columns"></div>
+
+<!-- Add/Edit Frequency Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">Add Frequency</h2>
+    <p>Create a new chore category with its own reset schedule.</p>
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="freq-name" placeholder="e.g. Biweekly, Every 2 Months…">
+    </div>
+    <div class="form-field">
+      <label>Reset every</label>
+      <div style="display:flex;gap:0.5rem">
+        <input type="number" id="freq-days" min="1" max="999" placeholder="30" style="width:90px">
+        <select id="freq-unit">
+          <option value="1">days</option>
+          <option value="7">weeks</option>
+          <option value="30">months</option>
+          <option value="91">quarters</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Color</label>
+      <div class="color-swatches" id="color-swatches"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveFrequency()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.loadRemoteState = function(remote) {
+  state = remote;
+  renderAll();
+};
+const COLORS = [
+  '#8a9e7e','#c2714a','#c9a09a','#c8a84b','#6b9ec2','#9e8ac2','#7eab9e','#b07878'
+];
+
+function makeDefaultFreqs(prefix) {
+  if (prefix === 'shared') return [
+    {
+      id: prefix+'_quarterly', name: 'Quarterly', color: '#c2714a', intervalDays: 91,
+      lastReset: todayStr(), chores: []
+    },
+    {
+      id: prefix+'_monthly', name: 'Monthly', color: '#8a9e7e', intervalDays: 30,
+      lastReset: todayStr(), chores: []
+    },
+    {
+      id: prefix+'_weekly', name: 'Weekly', color: '#c9a09a', intervalDays: 7,
+      lastReset: todayStr(), chores: []
+    }
+  ];
+  if (prefix === 'p1') return [
+    {
+      id: prefix+'_monthly', name: 'Monthly', color: '#8a9e7e', intervalDays: 30,
+      lastReset: todayStr(), chores: []
+    },
+    {
+      id: prefix+'_weekly', name: 'Weekly', color: '#c9a09a', intervalDays: 7,
+      lastReset: todayStr(), chores: []
+    }
+  ];
+  return [
+    {
+      id: prefix+'_monthly', name: 'Monthly', color: '#c8a84b', intervalDays: 30,
+      lastReset: todayStr(), chores: []
+    },
+    {
+      id: prefix+'_weekly', name: 'Weekly', color: '#6b9ec2', intervalDays: 7,
+      lastReset: todayStr(), chores: []
+    }
+  ];
+}
+
+const DEFAULT_STATE = {
+  names: { p1: 'Person 1', p2: 'Person 2' },
+  tabs: {
+    shared: makeDefaultFreqs('shared'),
+    p1: makeDefaultFreqs('p1'),
+    p2: makeDefaultFreqs('p2'),
+  }
+};
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('chore-tracker-v3');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+
+function saveState() {
+  localStorage.setItem('chore-tracker-v3', JSON.stringify(state));
+  window._lastSaved = state;
+  if (window.saveStateRemote) window.saveStateRemote(state); // sync to Firebase
+}
+
+let state = loadState();
+let activeTab = 'shared';
+let dragSrc = null;
+let editingFreqId = null;
+let selectedColor = COLORS[0];
+let renamingTab = null;
+
+// Setup flow
+function checkSetup() {
+  const hasNames = state.names && state.names.p1 !== 'Person 1' && state.names.p2 !== 'Person 2';
+  if (!hasNames) {
+    document.getElementById('setup-modal').classList.add('open');
+  }
+  updateTabLabels();
+}
+
+function saveSetup() {
+  const p1 = document.getElementById('setup-p1').value.trim() || 'Person 1';
+  const p2 = document.getElementById('setup-p2').value.trim() || 'Person 2';
+  state.names = { p1, p2 };
+  saveState();
+  document.getElementById('setup-modal').classList.remove('open');
+  updateTabLabels();
+}
+
+function updateTabLabels() {
+  document.getElementById('tab-p1-label').textContent = state.names.p1;
+  document.getElementById('tab-p2-label').textContent = state.names.p2;
+}
+
+function switchTab(tabId) {
+  activeTab = tabId;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  renderAll();
+}
+
+function openRename(tabId, e) {
+  e.stopPropagation();
+  renamingTab = tabId;
+  document.getElementById('rename-input').value = state.names[tabId];
+  document.getElementById('rename-modal').classList.add('open');
+}
+function closeRename() {
+  document.getElementById('rename-modal').classList.remove('open');
+  renamingTab = null;
+}
+function saveRename() {
+  const val = document.getElementById('rename-input').value.trim();
+  if (val && renamingTab) {
+    state.names[renamingTab] = val;
+    saveState();
+    updateTabLabels();
+  }
+  closeRename();
+}
+
+function autoReset() {
+  const today = new Date();
+  Object.values(state.tabs).forEach(freqs => {
+    freqs.forEach(f => {
+      const last = new Date(f.lastReset);
+      const diffDays = (today - last) / (1000*60*60*24);
+      if (diffDays >= f.intervalDays) {
+        f.chores.forEach(c => c.done = false);
+        f.lastReset = todayStr();
+      }
+    });
+  });
+  saveState();
+}
+
+function daysUntilReset(f) {
+  const last = new Date(f.lastReset);
+  const next = new Date(last.getTime() + f.intervalDays * 86400000);
+  const today = new Date();
+  const diff = Math.ceil((next - today) / 86400000);
+  return diff;
+}
+
+function currentFreqs() {
+  return state.tabs[activeTab];
+}
+
+function renderAll() {
+  autoReset();
+  const container = document.getElementById('columns');
+  container.innerHTML = '';
+
+  currentFreqs().forEach(f => {
+    const col = document.createElement('div');
+    col.className = 'column';
+    col.dataset.freqId = f.id;
+
+    const done = f.chores.filter(c => c.done).length;
+    const total = f.chores.length;
+    const pct = total ? Math.round(done / total * 100) : 0;
+
+    const days = daysUntilReset(f);
+    const overdue = days <= 0;
+    const resetLabel = overdue
+      ? 'Overdue — click to reset'
+      : days === 1 ? 'Resets tomorrow'
+      : `Resets in ${days}d`;
+
+    col.innerHTML = `
+      <div class="col-header">
+        <div class="col-header-left">
+          <div class="col-dot" style="background:${f.color}"></div>
+          <div class="col-title">${f.name}</div>
+        </div>
+        <button class="btn-ghost" onclick="deleteFrequency('${f.id}')" title="Delete category">✕</button>
+      </div>
+      <div class="col-meta">
+        <span class="reset-badge ${overdue?'overdue':''}" onclick="manualReset('${f.id}')">
+          ↺ ${resetLabel}
+        </span>
+      </div>
+      <div class="chores-list" id="list-${f.id}">
+        ${f.chores.map(c => choreHTML(f.id, c)).join('')}
+      </div>
+      <div class="add-chore-row">
+        <input class="add-chore-input" id="inp-${f.id}" placeholder="Add a chore…" 
+          onkeydown="if(event.key==='Enter')addChore('${f.id}')">
+        <button class="btn-add-chore" onclick="addChore('${f.id}')">+</button>
+      </div>
+      <div class="col-footer">
+        <span class="progress-text">${done}/${total} done</span>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+
+    setupDrop(col, f.id);
+    container.appendChild(col);
+  });
+
+  // Add frequency button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-col-btn';
+  addBtn.innerHTML = '<span>＋</span>New Frequency';
+  addBtn.onclick = openAddFreq;
+  container.appendChild(addBtn);
+
+  // Attach drag listeners
+  document.querySelectorAll('.chore-item').forEach(el => {
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragend', onDragEnd);
+  });
+}
+
+function choreHTML(freqId, c) {
+  return `<div class="chore-item" draggable="true" data-freq="${freqId}" data-chore="${c.id}" id="chore-${c.id}">
+    <div class="chore-check ${c.done?'checked':''}" onclick="toggleChore('${freqId}','${c.id}')"></div>
+    <span class="chore-label ${c.done?'done':''}">${escHtml(c.text)}</span>
+    <button class="chore-delete btn-ghost" onclick="deleteChore('${freqId}','${c.id}')">✕</button>
+  </div>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setupDrop(col, freqId) {
+  col.addEventListener('dragover', e => {
+    e.preventDefault();
+    col.classList.add('drag-over');
+    const list = document.getElementById('list-' + freqId);
+    const existing = list.querySelector('.drag-placeholder');
+    const afterEl = getDragAfterEl(list, e.clientY);
+    if (!existing) {
+      const ph = document.createElement('div');
+      ph.className = 'drag-placeholder';
+      if (afterEl) list.insertBefore(ph, afterEl);
+      else list.appendChild(ph);
+    } else {
+      if (afterEl) list.insertBefore(existing, afterEl);
+      else list.appendChild(existing);
+    }
+  });
+  col.addEventListener('dragleave', e => {
+    if (!col.contains(e.relatedTarget)) {
+      col.classList.remove('drag-over');
+      const ph = col.querySelector('.drag-placeholder');
+      if (ph) ph.remove();
+    }
+  });
+  col.addEventListener('drop', e => {
+    e.preventDefault();
+    col.classList.remove('drag-over');
+    const ph = col.querySelector('.drag-placeholder');
+    if (ph) ph.remove();
+
+    if (!dragSrc) return;
+    const {freqId: srcFreq, choreId} = dragSrc;
+
+    const freqs = currentFreqs();
+    const srcFreqObj = freqs.find(f => f.id === srcFreq);
+    const tgtFreqObj = freqs.find(f => f.id === freqId);
+    if (!srcFreqObj || !tgtFreqObj) return;
+
+    const choreIdx = srcFreqObj.chores.findIndex(c => c.id === choreId);
+    if (choreIdx === -1) return;
+    const [chore] = srcFreqObj.chores.splice(choreIdx, 1);
+
+    const list = document.getElementById('list-' + freqId);
+    const afterEl = getDragAfterEl(list, e.clientY);
+    let insertIdx = tgtFreqObj.chores.length;
+    if (afterEl && afterEl.dataset.chore) {
+      const targetIdx = tgtFreqObj.chores.findIndex(c => c.id === afterEl.dataset.chore);
+      if (targetIdx !== -1) insertIdx = targetIdx;
+    }
+    tgtFreqObj.chores.splice(insertIdx, 0, chore);
+    saveState();
+    renderAll();
+  });
+}
+
+function getDragAfterEl(container, y) {
+  const els = [...container.querySelectorAll('.chore-item:not(.dragging)')];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) return {offset, el: child};
+    return closest;
+  }, {offset: -Infinity}).el;
+}
+
+function onDragStart(e) {
+  const el = e.currentTarget;
+  dragSrc = {freqId: el.dataset.freq, choreId: el.dataset.chore};
+  el.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
+  document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
+  dragSrc = null;
+}
+
+function toggleChore(freqId, choreId) {
+  const f = currentFreqs().find(f => f.id === freqId);
+  const c = f && f.chores.find(c => c.id === choreId);
+  if (c) { c.done = !c.done; saveState(); renderAll(); }
+}
+
+function deleteChore(freqId, choreId) {
+  const f = currentFreqs().find(f => f.id === freqId);
+  if (f) { f.chores = f.chores.filter(c => c.id !== choreId); saveState(); renderAll(); }
+}
+
+function addChore(freqId) {
+  const inp = document.getElementById('inp-' + freqId);
+  const text = inp.value.trim();
+  if (!text) return;
+  const f = currentFreqs().find(f => f.id === freqId);
+  if (f) {
+    f.chores.push({id: 'c' + Date.now(), text, done: false});
+    saveState(); renderAll();
+    setTimeout(() => { const el = document.getElementById('inp-' + freqId); if(el) el.focus(); }, 0);
+  }
+}
+
+function manualReset(freqId) {
+  const f = currentFreqs().find(f => f.id === freqId);
+  if (!f) return;
+  f.chores.forEach(c => c.done = false);
+  f.lastReset = todayStr();
+  saveState(); renderAll();
+}
+
+function resetAll() {
+  Object.values(state.tabs).forEach(freqs => {
+    freqs.forEach(f => {
+      if (daysUntilReset(f) <= 0) {
+        f.chores.forEach(c => c.done = false);
+        f.lastReset = todayStr();
+      }
+    });
+  });
+  saveState(); renderAll();
+}
+
+function deleteFrequency(freqId) {
+  if (!confirm('Delete this category and all its chores?')) return;
+  state.tabs[activeTab] = state.tabs[activeTab].filter(f => f.id !== freqId);
+  saveState(); renderAll();
+}
+
+// Modal
+function buildSwatches() {
+  const container = document.getElementById('color-swatches');
+  container.innerHTML = '';
+  COLORS.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'color-swatch' + (c === selectedColor ? ' selected' : '');
+    s.style.background = c;
+    s.onclick = () => {
+      selectedColor = c;
+      document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
+      s.classList.add('selected');
+    };
+    container.appendChild(s);
+  });
+}
+
+function openAddFreq() {
+  editingFreqId = null;
+  document.getElementById('modal-title').textContent = 'Add Frequency';
+  document.getElementById('freq-name').value = '';
+  document.getElementById('freq-days').value = '';
+  document.getElementById('freq-unit').value = '1';
+  selectedColor = COLORS[0];
+  buildSwatches();
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function saveFrequency() {
+  const name = document.getElementById('freq-name').value.trim();
+  const days = parseInt(document.getElementById('freq-days').value);
+  const unit = parseInt(document.getElementById('freq-unit').value);
+  if (!name || isNaN(days) || days < 1) {
+    alert('Please fill in a name and a valid number of days.');
+    return;
+  }
+  const intervalDays = days * unit;
+  state.tabs[activeTab].push({
+    id: activeTab + '_freq_' + Date.now(),
+    name, color: selectedColor, intervalDays,
+    lastReset: todayStr(), chores: []
+  });
+  saveState();
+  closeModal();
+  renderAll();
+}
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+document.getElementById('rename-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('rename-modal')) closeRename();
+});
+document.getElementById('rename-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveRename();
+});
+
+checkSetup();
+renderAll();
+</script>
+</body>
+</html>
