@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Chore state document ────────────────────────────────────────────────
+    // Only the single shared-state document is used by the app.
+    // Anyone with the URL can read and write — suitable for a private,
+    // shared-link-only household app. If you want stricter access,
+    // see the "Locking it down further" comments below.
+    match /chores/shared-state {
+
+      // Allow reads from any origin (your partner needs to load the data)
+      allow read: if true;
+
+      // Allow writes only if the incoming data has the expected shape:
+      //   { data: "<JSON string>" }
+      // This prevents random garbage from being written to your document.
+      allow write: if request.resource.data.keys().hasOnly(['data'])
+                   && request.resource.data.data is string
+                   && request.resource.data.data.size() < 500000; // 500 KB cap
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// ── Locking it down further (optional) ────────────────────────────────────────
+//
+// If you add Firebase Authentication (e.g. Google Sign-In), you can restrict
+// access to only signed-in users by replacing `if true` with:
+//
+//   allow read, write: if request.auth != null;
+//
+// And to allow only specific email addresses (you and your partner):
+//
+//   allow read, write: if request.auth.token.email in [
+//     "you@example.com",
+//     "partner@example.com"
+//   ];
+//
+// See https://firebase.google.com/docs/firestore/security/get-started

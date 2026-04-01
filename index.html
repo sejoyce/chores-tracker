@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home & Hearth — Chore Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header>
+  <h1>Chores Tracker</h1>
+</header>
+
+<!-- Setup Modal (first time) -->
+<div class="modal-overlay" id="setup-modal">
+  <div class="modal">
+    <h2>Welcome Home 🏡</h2>
+    <p>Enter your names to personalise your chore tabs.</p>
+    <div class="form-field">
+      <label>Your name</label>
+      <input type="text" id="setup-p1" placeholder="e.g. Alex">
+    </div>
+    <div class="form-field">
+      <label>Partner's name</label>
+      <input type="text" id="setup-p2" placeholder="e.g. Jordan">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveSetup()">Let's go →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Tab Modal -->
+<div class="modal-overlay" id="rename-modal">
+  <div class="modal">
+    <h2>Rename Tab</h2>
+    <p>Enter a new name for this person's tab.</p>
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="rename-input" placeholder="e.g. Jordan">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeRename()">Cancel</button>
+      <button class="btn-primary" onclick="saveRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Frequency Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">Add Frequency</h2>
+    <p>Create a new chore category with its own reset schedule.</p>
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="freq-name" placeholder="e.g. Biweekly, Every 2 Months…">
+    </div>
+    <div class="form-field">
+      <label>Reset every</label>
+      <div style="display:flex;gap:0.5rem">
+        <input type="number" id="freq-days" min="1" max="999" placeholder="30" style="width:90px">
+        <select id="freq-unit">
+          <option value="1">days</option>
+          <option value="7">weeks</option>
+          <option value="30">months</option>
+          <option value="91">quarters</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Color</label>
+      <div class="color-swatches" id="color-swatches"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveFrequency()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs-wrap">
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" onclick="switchTab('shared')" id="tab-shared">
+      <span class="tab-emoji">🏠</span>Shared
+    </button>
+    <button class="tab-btn" onclick="switchTab('p1')" id="tab-p1">
+      <span class="tab-emoji">👤</span><span id="tab-p1-label">Person 1</span>
+      <span class="tab-rename" onclick="openRename('p1',event)" title="Rename">✎</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('p2')" id="tab-p2">
+      <span class="tab-emoji">👤</span><span id="tab-p2-label">Person 2</span>
+      <span class="tab-rename" onclick="openRename('p2',event)" title="Rename">✎</span>
+    </button>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <button class="btn-primary" onclick="openAddFreq()">＋ New Frequency</button>
+  <button class="btn-secondary" onclick="resetAll()">↺ Reset All Overdue</button>
+</div>
+
+<!-- Main columns area -->
+<div class="columns" id="columns"></div>
+
+<!-- Firebase (module scripts load async; app.js waits for DOMContentLoaded) -->
+<!--
+  SETUP: Replace the placeholder config below with your own from the Firebase console.
+  Project Settings → Your apps → Web app → firebaseConfig
+-->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey:            "YOUR_API_KEY",
+    authDomain:        "YOUR_PROJECT.firebaseapp.com",
+    projectId:         "YOUR_PROJECT_ID",
+    storageBucket:     "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId:             "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const docRef = doc(db, "chores", "shared-state");
+
+  // Expose save hook so state.js can call it
+  window._firebaseSave = async (stateObj) => {
+    await setDoc(docRef, { data: JSON.stringify(stateObj) });
+  };
+
+  // Real-time listener — pushes remote changes into the app
+  onSnapshot(docRef, (snap) => {
+    if (!snap.exists()) return;
+    const remote = JSON.parse(snap.data().data);
+    // Avoid re-rendering our own writes
+    if (JSON.stringify(remote) !== JSON.stringify(window._lastSavedState)) {
+      window._lastSavedState = remote;
+      if (typeof loadRemoteState === "function") loadRemoteState(remote);
+    }
+  });
+</script>
+
+<!-- App scripts (plain JS, order matters) -->
+<script src="js/state.js"></script>
+<script src="js/drag.js"></script>
+<script src="js/render.js"></script>
+<script src="js/modals.js"></script>
+<script>
+  // Boot
+  checkSetup();
+  renderAll();
+</script>
+
+</body>
+</html>
