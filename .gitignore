@@ -1,0 +1,11 @@
+# Never commit a locally-modified index.html that might contain real secrets
+# (the workflow injects secrets at deploy time into a temporary copy)
+*.local.html
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
