@@ -10,7 +10,7 @@ service cloud.firestore {
     // see the "Locking it down further" comments below.
     match /chores/shared-state {
 
-      // Allow reads from any origin (your partner needs to load the data)
+      // Allow reads from any origin
       allow read: if true;
 
       // Allow writes only if the incoming data has the expected shape:

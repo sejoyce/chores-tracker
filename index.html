@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chore Tracker</title>
+  <title>Home & Hearth — Chore Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -106,15 +106,16 @@
 <!-- Main columns area -->
 <div class="columns" id="columns"></div>
 
-<!-- Firebase (module scripts load async; app.js waits for DOMContentLoaded) -->
 <!--
-  SETUP: Replace the placeholder config below with your own from the Firebase console.
-  Project Settings → Your apps → Web app → firebaseConfig
+  ═══════════════════════════════════════════════════════════════
+  FIREBASE SETUP
+  Replace every "YOUR_..." value below with your actual config
+  from: Firebase Console → Project Settings → Your apps → Web app
+  ═══════════════════════════════════════════════════════════════
 -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { initializeApp }                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: import.meta.env.FIREBASE_API_KEY,
@@ -125,25 +126,53 @@
     appId: import.meta.env.FIREBASE_APP_ID,
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-  const docRef = doc(db, "chores", "shared-state");
+  // ── Detect whether the config has been filled in ──────────────────────────
+  const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
 
-  // Expose save hook so state.js can call it
-  window._firebaseSave = async (stateObj) => {
-    await setDoc(docRef, { data: JSON.stringify(stateObj) });
-  };
+  if (!isConfigured) {
+    console.warn(
+      "Firebase not configured. Open index.html and replace the YOUR_... " +
+      "placeholders with your real Firebase config. The app will run in " +
+      "local-only mode until then."
+    );
+    // Signal to the boot script that Firebase is unavailable
+    window._firebaseReady = Promise.resolve(null);
+  } else {
+    const app    = initializeApp(firebaseConfig);
+    const db     = getFirestore(app);
+    const docRef = doc(db, "chores", "shared-state");
 
-  // Real-time listener — pushes remote changes into the app
-  onSnapshot(docRef, (snap) => {
-    if (!snap.exists()) return;
-    const remote = JSON.parse(snap.data().data);
-    // Avoid re-rendering our own writes
-    if (JSON.stringify(remote) !== JSON.stringify(window._lastSavedState)) {
-      window._lastSavedState = remote;
-      if (typeof loadRemoteState === "function") loadRemoteState(remote);
-    }
-  });
+    // Expose save hook for state.js
+    window._firebaseSave = async (stateObj) => {
+      await setDoc(docRef, { data: JSON.stringify(stateObj) });
+    };
+
+    // _firebaseReady resolves with the initial remote snapshot (or null if
+    // the document doesn't exist yet). The boot script waits for this before
+    // rendering, so the app always starts with the latest saved state.
+    window._firebaseReady = new Promise((resolve) => {
+      const unsub = onSnapshot(docRef, (snap) => {
+        if (!snap.exists()) {
+          resolve(null);  // No remote data yet — use local defaults
+        } else {
+          resolve(JSON.parse(snap.data().data));
+        }
+        // After the first snapshot, switch to live updates
+        unsub();
+        onSnapshot(docRef, (snap) => {
+          if (!snap.exists()) return;
+          const remote = JSON.parse(snap.data().data);
+          if (JSON.stringify(remote) !== JSON.stringify(window._lastSavedState)) {
+            window._lastSavedState = remote;
+            if (typeof loadRemoteState === "function") loadRemoteState(remote);
+          }
+        });
+      }, (err) => {
+        console.error("Firebase onSnapshot error:", err);
+        resolve(null); // Fall back to local state on error
+      });
+    });
+  }
 </script>
 
 <!-- App scripts (plain JS, order matters) -->
@@ -152,9 +181,17 @@
 <script src="js/render.js"></script>
 <script src="js/modals.js"></script>
 <script>
-  // Boot
-  checkSetup();
-  renderAll();
+  // Boot: wait for Firebase to deliver the initial state before rendering.
+  // Falls back immediately if Firebase isn't configured or errors out.
+  (window._firebaseReady || Promise.resolve(null)).then((remoteState) => {
+    if (remoteState) {
+      // Seed local state from Firebase so both devices start in sync
+      state = remoteState;
+      localStorage.setItem('chore-tracker-v3', JSON.stringify(state));
+    }
+    checkSetup();
+    renderAll();
+  });
 </script>
 
 </body>
