@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chore Tracker</title>
+  <title>Home & Hearth — Chore Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
 <header>
-  <h1>Chore Tracker</h1>
+  <h1>Home &amp; <span>Hearth</span></h1>
+  <p>your shared chore tracker</p>
 </header>
 
 <!-- Setup Modal (first time) -->
@@ -35,11 +36,15 @@
 <!-- Rename Tab Modal -->
 <div class="modal-overlay" id="rename-modal">
   <div class="modal">
-    <h2>Rename Tab</h2>
-    <p>Enter a new name for this person's tab.</p>
+    <h2>Edit Tab</h2>
+    <p>Update the name and emoji for this person's tab.</p>
     <div class="form-field">
       <label>Name</label>
       <input type="text" id="rename-input" placeholder="e.g. Jordan">
+    </div>
+    <div class="form-field">
+      <label>Emoji</label>
+      <div class="emoji-picker" id="emoji-picker"></div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeRename()">Cancel</button>
@@ -87,11 +92,11 @@
       <span class="tab-emoji">🏠</span>Shared
     </button>
     <button class="tab-btn" onclick="switchTab('p1')" id="tab-p1">
-      <span class="tab-emoji">👤</span><span id="tab-p1-label">Person 1</span>
+      <span class="tab-emoji" id="tab-p1-emoji">👤</span><span id="tab-p1-label">Person 1</span>
       <span class="tab-rename" onclick="openRename('p1',event)" title="Rename">✎</span>
     </button>
     <button class="tab-btn" onclick="switchTab('p2')" id="tab-p2">
-      <span class="tab-emoji">👤</span><span id="tab-p2-label">Person 2</span>
+      <span class="tab-emoji" id="tab-p2-emoji">👤</span><span id="tab-p2-label">Person 2</span>
       <span class="tab-rename" onclick="openRename('p2',event)" title="Rename">✎</span>
     </button>
   </div>

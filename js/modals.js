@@ -9,6 +9,13 @@
 let editingFreqId = null;
 let renamingTab   = null;
 let selectedColor = COLORS[0];
+let selectedEmoji = '👤';
+
+const PERSON_EMOJIS = [
+  '👤','🧑','👩','👨','🧔','👩‍🦰','👩‍🦱','👩‍🦳','👩‍🦲',
+  '🧑‍🦰','🧑‍🦱','🧑‍🦳','🧑‍🦲','🐱','🐶','🦊','🐻','🐼',
+  '🌸','🌻','⭐','🌙','🔥','💎','🎸','🎨','🏄','🧁','🍕',
+];
 
 // ─── Setup Modal ──────────────────────────────────────────────────────────────
 
@@ -43,6 +50,10 @@ function switchTab(tabId) {
 function updateTabLabels() {
   document.getElementById('tab-p1-label').textContent = state.names.p1;
   document.getElementById('tab-p2-label').textContent = state.names.p2;
+  const e1 = document.getElementById('tab-p1-emoji');
+  const e2 = document.getElementById('tab-p2-emoji');
+  if (e1) e1.textContent = state.names.p1emoji || '👤';
+  if (e2) e2.textContent = state.names.p2emoji || '👤';
 }
 
 // ─── Rename Tab Modal ─────────────────────────────────────────────────────────
@@ -51,6 +62,9 @@ function openRename(tabId, e) {
   e.stopPropagation();
   renamingTab = tabId;
   document.getElementById('rename-input').value = state.names[tabId];
+  const emojiKey = tabId + 'emoji';
+  selectedEmoji = state.names[emojiKey] || '👤';
+  buildEmojiPicker();
   document.getElementById('rename-modal').classList.add('open');
   setTimeout(() => document.getElementById('rename-input').focus(), 50);
 }
@@ -64,6 +78,7 @@ function saveRename() {
   const val = document.getElementById('rename-input').value.trim();
   if (val && renamingTab) {
     state.names[renamingTab] = val;
+    state.names[renamingTab + 'emoji'] = selectedEmoji;
     saveState();
     updateTabLabels();
   }
@@ -118,6 +133,25 @@ function buildSwatches() {
       swatch.classList.add('selected');
     };
     container.appendChild(swatch);
+  });
+}
+
+// ─── Emoji Picker ────────────────────────────────────────────────────────────
+
+function buildEmojiPicker() {
+  const container = document.getElementById('emoji-picker');
+  container.innerHTML = '';
+  PERSON_EMOJIS.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'emoji-option' + (emoji === selectedEmoji ? ' selected' : '');
+    btn.textContent = emoji;
+    btn.onclick = () => {
+      selectedEmoji = emoji;
+      container.querySelectorAll('.emoji-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    container.appendChild(btn);
   });
 }
 
