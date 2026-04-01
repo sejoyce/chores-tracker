@@ -28,30 +28,25 @@ function makeDefaultFreqs(prefix) {
       {
         id: `${prefix}_quarterly`, name: 'Quarterly', color: '#c2714a', intervalDays: 91,
         lastReset: todayStr(), chores: [
-          { id: `${prefix}c1`, text: 'Refresh litter boxes',      done: false },
-          { id: `${prefix}c2`, text: 'Wash Leia linens',           done: false },
-          { id: `${prefix}c3`, text: 'Clean car',                  done: false },
-          { id: `${prefix}c4`, text: 'Clean dishwasher',           done: false },
-          { id: `${prefix}c5`, text: 'Clean lamps & baseboards',   done: false },
-          { id: `${prefix}c6`, text: 'Wash duvet cover',           done: false },
+          { id: `${prefix}c4`, text: 'Dishwasher',           done: false },
+          { id: `${prefix}c5`, text: 'Lamps & baseboards',   done: false },
         ],
       },
       {
         id: `${prefix}_monthly`, name: 'Monthly', color: '#8a9e7e', intervalDays: 30,
         lastReset: todayStr(), chores: [
-          { id: `${prefix}c7`,  text: 'Wash sheets',               done: false },
-          { id: `${prefix}c8`,  text: 'Clean out & wipe fridge',   done: false },
-          { id: `${prefix}c9`,  text: 'Vacuum',                    done: false },
-          { id: `${prefix}c10`, text: 'Clean stove + microwave',   done: false },
+          { id: `${prefix}c6`, text: 'Wash duvet cover',           done: false },
+          { id: `${prefix}c8`,  text: 'Clean out fridge',   done: false },
+          { id: `${prefix}c10`, text: 'Stove + microwave',   done: false },
+          { id: `${prefix}c10`, text: 'Toilet',   done: false },
         ],
       },
       {
         id: `${prefix}_weekly`, name: 'Weekly', color: '#c9a09a', intervalDays: 7,
         lastReset: todayStr(), chores: [
-          { id: `${prefix}c11`, text: 'Sweep',                        done: false },
+          { id: `${prefix}c7`,  text: 'Wash sheets',               done: false },
+          { id: `${prefix}c9`,  text: 'Vacuum',                    done: false },
           { id: `${prefix}c12`, text: 'Trash & recycling',            done: false },
-          { id: `${prefix}c13`, text: 'Meal plan & prep',             done: false },
-          { id: `${prefix}c14`, text: 'Grocery shopping',             done: false },
           { id: `${prefix}c15`, text: 'Wipe counters, sinks, mirror', done: false },
         ],
       },
@@ -61,10 +56,16 @@ function makeDefaultFreqs(prefix) {
   if (prefix === 'p1') {
     return [
       {
+        id: `${prefix}_quarterly`, name: 'Quarterly', color: '#c2714a', intervalDays: 91,
+        lastReset: todayStr(), chores: [
+          { id: `${prefix}c1`, text: 'Refresh litter boxes',      done: false },
+          { id: `${prefix}c2`, text: 'Wash Leia\'s blankets',           done: false },
+          { id: `${prefix}c3`, text: 'Clean car',                  done: false },
+        ],
+      },
+      {
         id: `${prefix}_monthly`, name: 'Monthly', color: '#8a9e7e', intervalDays: 30,
         lastReset: todayStr(), chores: [
-          { id: `${prefix}c1`, text: 'Wash bras',     done: false },
-          { id: `${prefix}c2`, text: 'Clean toilet',  done: false },
           { id: `${prefix}c3`, text: 'Clean shower',  done: false },
         ],
       },
