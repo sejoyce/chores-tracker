@@ -237,6 +237,8 @@ function addFrequency({ name, intervalDays, color }) {
     lastReset: todayStr(),
     chores: [],
   });
+  // Keep columns sorted longest interval → shortest (can be manually reordered after)
+  state.tabs[activeTab].sort((a, b) => b.intervalDays - a.intervalDays);
   saveState();
   renderAll();
 }

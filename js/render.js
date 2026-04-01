@@ -26,10 +26,20 @@ function renderAll() {
   addBtn.onclick    = openAddFreq;
   container.appendChild(addBtn);
 
-  // Wire up drag listeners on every chore item
+  // Wire up chore item drag listeners
   container.querySelectorAll('.chore-item').forEach(el => {
     el.addEventListener('dragstart', onDragStart);
     el.addEventListener('dragend',   onDragEnd);
+  });
+
+  // Wire up column drag via the handle — make the column draggable only when
+  // the user grabs the handle, so normal scrolling/clicking still works.
+  container.querySelectorAll('.col-drag-handle').forEach(handle => {
+    const col = handle.closest('.column');
+    handle.addEventListener('mousedown', () => { col.draggable = true; });
+    col.addEventListener('dragend', () => { col.draggable = false; });
+    col.addEventListener('dragstart', onColDragStart);
+    col.addEventListener('dragend',   onColDragEnd);
   });
 }
 
@@ -50,6 +60,9 @@ function buildColumn(f) {
   const col = document.createElement('div');
   col.className      = 'column';
   col.dataset.freqId = f.id;
+  // draggable is toggled on/off by the handle mousedown to avoid
+  // interfering with clicking, scrolling, and chore drags.
+  col.draggable = false;
 
   col.innerHTML = `
     <div class="col-header">
@@ -57,7 +70,10 @@ function buildColumn(f) {
         <div class="col-dot" style="background:${f.color}"></div>
         <div class="col-title">${escHtml(f.name)}</div>
       </div>
-      <button class="btn-ghost" onclick="deleteFrequency('${f.id}')" title="Delete category">✕</button>
+      <div class="col-header-right">
+        <span class="col-drag-handle" title="Drag to reorder">⠿</span>
+        <button class="btn-ghost" onclick="deleteFrequency('${f.id}')" title="Delete category">✕</button>
+      </div>
     </div>
 
     <div class="col-meta">

@@ -1,19 +1,27 @@
 /**
  * drag.js
  * -------
- * Handles HTML5 drag-and-drop for chore items between frequency columns.
+ * Handles two kinds of drag-and-drop:
+ *   1. Chore items  — dragged between frequency columns (vertical)
+ *   2. Freq columns — dragged to reorder left-to-right (horizontal)
+ *
  * Depends on: state.js (state, currentFreqs, saveState, renderAll)
  */
 
-let dragSrc = null; // { freqId, choreId }
+// ─── Shared State ─────────────────────────────────────────────────────────────
 
-// ─── Event Handlers ───────────────────────────────────────────────────────────
+let dragSrc    = null; // chore drag  → { freqId, choreId }
+let colDragSrc = null; // column drag → freqId string
+
+// ─── Chore Drag Handlers ──────────────────────────────────────────────────────
 
 function onDragStart(e) {
+  e.stopPropagation();
   const el = e.currentTarget;
   dragSrc = { freqId: el.dataset.freq, choreId: el.dataset.chore };
   el.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('dragtype', 'chore');
 }
 
 function onDragEnd(e) {
@@ -23,10 +31,44 @@ function onDragEnd(e) {
   dragSrc = null;
 }
 
+// ─── Column Drag Handlers ─────────────────────────────────────────────────────
+
+function onColDragStart(e) {
+  colDragSrc = e.currentTarget.dataset.freqId;
+  e.currentTarget.classList.add('col-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('dragtype', 'column');
+}
+
+function onColDragEnd(e) {
+  e.currentTarget.classList.remove('col-dragging');
+  document.querySelectorAll('.col-drag-over-left, .col-drag-over-right')
+    .forEach(el => el.classList.remove('col-drag-over-left', 'col-drag-over-right'));
+  colDragSrc = null;
+}
+
 // ─── Drop Target Setup ────────────────────────────────────────────────────────
 
 function setupDrop(col, freqId) {
+
   col.addEventListener('dragover', e => {
+    const isColDrag = colDragSrc && !dragSrc;
+
+    if (isColDrag) {
+      if (colDragSrc === freqId) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rect   = col.getBoundingClientRect();
+      const isLeft = e.clientX < rect.left + rect.width / 2;
+      document.querySelectorAll('.col-drag-over-left, .col-drag-over-right')
+        .forEach(el => el.classList.remove('col-drag-over-left', 'col-drag-over-right'));
+      col.classList.add(isLeft ? 'col-drag-over-left' : 'col-drag-over-right');
+      return;
+    }
+
+    // Chore drag
+    if (!dragSrc) return;
     e.preventDefault();
     col.classList.add('drag-over');
 
@@ -45,12 +87,43 @@ function setupDrop(col, freqId) {
 
   col.addEventListener('dragleave', e => {
     if (!col.contains(e.relatedTarget)) {
-      col.classList.remove('drag-over');
+      col.classList.remove('drag-over', 'col-drag-over-left', 'col-drag-over-right');
       col.querySelector('.drag-placeholder')?.remove();
     }
   });
 
   col.addEventListener('drop', e => {
+    const isColDrag = colDragSrc && !dragSrc;
+
+    // ── Column reorder ────────────────────────────────────────────────────────
+    if (isColDrag) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll('.col-drag-over-left, .col-drag-over-right')
+        .forEach(el => el.classList.remove('col-drag-over-left', 'col-drag-over-right'));
+
+      if (!colDragSrc || colDragSrc === freqId) return;
+
+      const freqs   = currentFreqs();
+      const fromIdx = freqs.findIndex(f => f.id === colDragSrc);
+      const toIdx   = freqs.findIndex(f => f.id === freqId);
+      if (fromIdx === -1 || toIdx === -1) return;
+
+      const rect     = col.getBoundingClientRect();
+      const dropLeft = e.clientX < rect.left + rect.width / 2;
+
+      const [moved] = freqs.splice(fromIdx, 1);
+      // After splice, recalculate target index
+      const newToIdx = freqs.findIndex(f => f.id === freqId);
+      freqs.splice(dropLeft ? newToIdx : newToIdx + 1, 0, moved);
+
+      saveState();
+      renderAll();
+      return;
+    }
+
+    // ── Chore drop ────────────────────────────────────────────────────────────
     e.preventDefault();
     col.classList.remove('drag-over');
     col.querySelector('.drag-placeholder')?.remove();
@@ -82,12 +155,8 @@ function setupDrop(col, freqId) {
   });
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helper ───────────────────────────────────────────────────────────────────
 
-/**
- * Returns the chore element that the dragged item should be inserted before,
- * based on the cursor's vertical position.
- */
 function getDragAfterEl(container, y) {
   const draggables = [...container.querySelectorAll('.chore-item:not(.dragging)')];
   return draggables.reduce((closest, child) => {
