@@ -35,6 +35,7 @@ body {
 header {
   text-align: center;
   padding: 3rem 1rem 1.5rem;
+  position: relative;
 }
 header h1 {
   font-family: 'Playfair Display', serif;
@@ -585,15 +586,13 @@ button {
 
 /* ─── User Chip (header) ──────────────────────────────────────────────────── */
 .header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
+  display: contents; /* dissolves — children render as if directly in header */
 }
 
 .user-chip {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
