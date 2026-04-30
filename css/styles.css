@@ -491,7 +491,14 @@ button {
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .columns { padding: 0 0.75rem 2rem; gap: 1rem; }
-  header   { padding: 2rem 1rem 1rem; }
+  header   { padding: 5rem 1rem 1rem; }
+  .user-chip {
+    top: 0.85rem;
+    right: 0.85rem;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem 0.3rem 0.3rem;
+  }
+  .user-chip img { width: 22px; height: 22px; }
 }
 
 /* ─── Emoji Picker ────────────────────────────────────────────────────────── */
