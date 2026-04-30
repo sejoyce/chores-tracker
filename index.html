@@ -9,8 +9,39 @@
 </head>
 <body>
 
+<!-- Sign-in screen (shown before auth, hidden after) -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-card">
+    <h1>Chore Tracker</h1>
+    <p>Sign in to access your chores.</p>
+    <button class="btn-google" id="sign-in-btn">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+        <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.169 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <p class="auth-note" id="auth-error" style="display:none;color:#c2714a"></p>
+  </div>
+</div>
+
+<!-- Main app (hidden until auth passes) -->
+<div id="app" style="display:none">
+
 <header>
-  <h1>Chore Tracker</h1>
+  <div class="header-inner">
+    <div>
+      <h1>Chore Tracker</h1>
+      <p>your shared chore tracker</p>
+    </div>
+    <div class="user-chip" id="user-chip">
+      <img id="user-avatar" src="" alt="" width="28" height="28">
+      <span id="user-name"></span>
+      <button class="btn-ghost sign-out-btn" id="sign-out-btn">Sign out</button>
+    </div>
+  </div>
 </header>
 
 <!-- Setup Modal (first time) -->
@@ -110,16 +141,21 @@
 <!-- Main columns area -->
 <div class="columns" id="columns"></div>
 
+</div><!-- /#app -->
+
 <!--
   ═══════════════════════════════════════════════════════════════
-  FIREBASE SETUP
-  Replace every "YOUR_..." value below with your actual config
-  from: Firebase Console → Project Settings → Your apps → Web app
+  FIREBASE — secrets injected by GitHub Actions at deploy time.
+  Do not replace the YOUR_... placeholders manually here.
   ═══════════════════════════════════════════════════════════════
 -->
 <script type="module">
-  import { initializeApp }                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey:            "YOUR_API_KEY",
@@ -130,50 +166,108 @@
     appId:             "YOUR_APP_ID"
   };
 
-  // ── Detect whether the config has been filled in ──────────────────────────
+  const ALLOWED_EMAILS = [
+    "YOUR_EMAIL_1",
+    "YOUR_EMAIL_2"
+  ];
+
   const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
 
   if (!isConfigured) {
-    console.warn(
-      "Firebase not configured. Open index.html and replace the YOUR_... " +
-      "placeholders with your real Firebase config. The app will run in " +
-      "local-only mode until then."
-    );
-    // Signal to the boot script that Firebase is unavailable
+    console.warn("Firebase not configured — running in local-only mode.");
     window._firebaseReady = Promise.resolve(null);
+    // Show app immediately in local mode
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
   } else {
     const app    = initializeApp(firebaseConfig);
     const db     = getFirestore(app);
+    const auth   = getAuth(app);
     const docRef = doc(db, "chores", "shared-state");
 
-    // Expose save hook for state.js
-    window._firebaseSave = async (stateObj) => {
-      await setDoc(docRef, { data: JSON.stringify(stateObj) });
-    };
+    // ── Auth ────────────────────────────────────────────────────────────────
 
-    // _firebaseReady resolves with the initial remote snapshot (or null if
-    // the document doesn't exist yet). The boot script waits for this before
-    // rendering, so the app always starts with the latest saved state.
+    // Sign-in button
+    document.getElementById('sign-in-btn').addEventListener('click', async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        const el = document.getElementById('auth-error');
+        el.textContent = 'Sign-in failed: ' + err.message;
+        el.style.display = 'block';
+      }
+    });
+
+    // Sign-out button
+    document.getElementById('sign-out-btn').addEventListener('click', () => {
+      signOut(auth);
+    });
+
+    // Auth state drives app visibility
     window._firebaseReady = new Promise((resolve) => {
-      const unsub = onSnapshot(docRef, (snap) => {
-        if (!snap.exists()) {
-          resolve(null);  // No remote data yet — use local defaults
-        } else {
-          resolve(JSON.parse(snap.data().data));
+      onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          // Not signed in — show auth screen, hide app
+          document.getElementById('auth-screen').style.display = 'flex';
+          document.getElementById('app').style.display = 'none';
+          resolve(null);
+          return;
         }
-        // After the first snapshot, switch to live updates
-        unsub();
-        onSnapshot(docRef, (snap) => {
-          if (!snap.exists()) return;
-          const remote = JSON.parse(snap.data().data);
-          if (JSON.stringify(remote) !== JSON.stringify(window._lastSavedState)) {
-            window._lastSavedState = remote;
-            if (typeof loadRemoteState === "function") loadRemoteState(remote);
+
+        // Check allow-list
+        if (!ALLOWED_EMAILS.includes(user.email)) {
+          signOut(auth);
+          const el = document.getElementById('auth-error');
+          el.textContent = `${user.email} is not authorised to access this app.`;
+          el.style.display = 'block';
+          resolve(null);
+          return;
+        }
+
+        // Authorised — show app, update user chip
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('user-name').textContent   = user.displayName || user.email;
+        const avatar = document.getElementById('user-avatar');
+        if (user.photoURL) { avatar.src = user.photoURL; avatar.style.display = 'inline'; }
+        else { avatar.style.display = 'none'; }
+
+        // ── Firestore ────────────────────────────────────────────────────────
+
+        window._firebaseSave = async (stateObj) => {
+          const raw = JSON.stringify(stateObj);
+          window._lastSavedRaw = raw;
+          await setDoc(docRef, { data: raw });
+        };
+
+        // Resolve with initial snapshot, then keep listening
+        let resolved = false;
+        const unsub = onSnapshot(docRef, (snap) => {
+          if (!snap.exists()) {
+            if (!resolved) { resolved = true; resolve(null); }
+            return;
           }
+          const raw = snap.data().data;
+          if (!resolved) {
+            resolved = true;
+            window._lastSavedRaw = raw;
+            resolve(JSON.parse(raw));
+            // Switch to live listener after first load
+            unsub();
+            onSnapshot(docRef, (snap) => {
+              if (!snap.exists()) return;
+              const rawRemote = snap.data().data;
+              if (rawRemote !== window._lastSavedRaw) {
+                window._lastSavedRaw = rawRemote;
+                if (typeof loadRemoteState === "function") loadRemoteState(JSON.parse(rawRemote));
+              }
+            });
+          }
+        }, (err) => {
+          console.error("Firestore error:", err);
+          if (!resolved) { resolved = true; resolve(null); }
         });
-      }, (err) => {
-        console.error("Firebase onSnapshot error:", err);
-        resolve(null); // Fall back to local state on error
       });
     });
   }
@@ -185,11 +279,8 @@
 <script src="js/render.js"></script>
 <script src="js/modals.js"></script>
 <script>
-  // Boot: wait for Firebase to deliver the initial state before rendering.
-  // Falls back immediately if Firebase isn't configured or errors out.
   (window._firebaseReady || Promise.resolve(null)).then((remoteState) => {
     if (remoteState) {
-      // Seed local state from Firebase so both devices start in sync
       state = remoteState;
       localStorage.setItem('chore-tracker-v3', JSON.stringify(state));
     }

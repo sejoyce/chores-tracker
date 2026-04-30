@@ -3,15 +3,13 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Runs whenever you push to main
+      - main
 
-# Required for GitHub Pages deployment
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Only allow one deployment at a time
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -27,14 +25,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject Firebase config secrets into index.html
+      - name: Inject Firebase config and auth secrets into index.html
         env:
-          FIREBASE_API_KEY:            ${{ secrets.FIREBASE_API_KEY }}
-          FIREBASE_AUTH_DOMAIN:        ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-          FIREBASE_PROJECT_ID:         ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_STORAGE_BUCKET:     ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_API_KEY:             ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN:         ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID:          ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET:      ${{ secrets.FIREBASE_STORAGE_BUCKET }}
           FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-          FIREBASE_APP_ID:             ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_APP_ID:              ${{ secrets.FIREBASE_APP_ID }}
+          ALLOWED_EMAIL_1:              ${{ secrets.ALLOWED_EMAIL_1 }}
+          ALLOWED_EMAIL_2:              ${{ secrets.ALLOWED_EMAIL_2 }}
         run: |
           sed -i "s|YOUR_API_KEY|$FIREBASE_API_KEY|g"                         index.html
           sed -i "s|YOUR_PROJECT.firebaseapp.com|$FIREBASE_AUTH_DOMAIN|g"     index.html
@@ -42,6 +42,8 @@ jobs:
           sed -i "s|YOUR_PROJECT.appspot.com|$FIREBASE_STORAGE_BUCKET|g"      index.html
           sed -i "s|YOUR_SENDER_ID|$FIREBASE_MESSAGING_SENDER_ID|g"           index.html
           sed -i "s|YOUR_APP_ID|$FIREBASE_APP_ID|g"                           index.html
+          sed -i "s|YOUR_EMAIL_1|$ALLOWED_EMAIL_1|g"                          index.html
+          sed -i "s|YOUR_EMAIL_2|$ALLOWED_EMAIL_2|g"                          index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -49,7 +51,7 @@ jobs:
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .  # Upload the whole repo root
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment
