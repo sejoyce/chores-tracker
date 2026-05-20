@@ -501,7 +501,7 @@ button {
   }
   .user-chip img { width: 22px; height: 22px; }
 
-  /* Tabs: stretch full width and show emoji-only labels */
+  /* Tabs: stretch full width, emoji only, no layout shifts */
   .tabs-wrap {
     padding: 0 0.75rem;
   }
@@ -511,27 +511,30 @@ button {
   }
   .tab-btn {
     flex: 1;
-    padding: 0.5rem 0.25rem;
-    font-size: 0;        /* hide text */
+    padding: 0.6rem 0.25rem;
+    font-size: 0;
     letter-spacing: 0;
+    /* Kill the blue tap highlight and prevent vertical resize */
+    -webkit-tap-highlight-color: transparent;
+    min-height: 2.5rem;
   }
   .tab-btn .tab-emoji {
-    font-size: 1.2rem;   /* emoji stays visible */
+    font-size: 1.25rem;
     margin-right: 0;
     display: block;
     text-align: center;
   }
-  /* Keep the active label readable on mobile */
+  /* Active tab: same size, just the brown background — no text or size change */
   .tab-btn.active {
-    font-size: 0.72rem;
-    padding: 0.5rem 0.5rem;
+    font-size: 0;
+    padding: 0.6rem 0.25rem;
   }
   .tab-btn.active .tab-emoji {
-    display: inline;
-    font-size: 0.9rem;
-    margin-right: 0.25rem;
+    font-size: 1.25rem;
+    display: block;
+    margin-right: 0;
   }
-  /* Hide the rename pencil on mobile — use the tab label as the button instead */
+  /* Hide rename pencil on mobile */
   .tab-rename { display: none !important; }
 }
 
