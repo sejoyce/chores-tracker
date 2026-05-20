@@ -17,24 +17,11 @@ const PERSON_EMOJIS = [
   '🌸','🌻','⭐','🌙','🔥','💎','🎸','🎨','🏄','🧁','🍕',
 ];
 
-// ─── Setup Modal ──────────────────────────────────────────────────────────────
+// ─── Setup ────────────────────────────────────────────────────────────────────
+// Setup modal removed — names and data are managed via Firebase.
+// checkSetup is kept as a no-op so the boot script can still call it safely.
 
 function checkSetup() {
-  // Only show the setup prompt if names have never been explicitly saved.
-  // state.names.set is written to true by saveSetup() and persisted in
-  // Firebase, so any device that loads remote state will skip this modal.
-  if (!state.names.set) {
-    document.getElementById('setup-modal').classList.add('open');
-  }
-  updateTabLabels();
-}
-
-function saveSetup() {
-  const p1 = document.getElementById('setup-p1').value.trim() || 'Person 1';
-  const p2 = document.getElementById('setup-p2').value.trim() || 'Person 2';
-  state.names = { p1, p2, set: true };
-  saveState();
-  document.getElementById('setup-modal').classList.remove('open');
   updateTabLabels();
 }
 
