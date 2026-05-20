@@ -112,12 +112,20 @@ function loadState() {
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 
-function saveState() {
+// Writes only to localStorage — safe to call during boot/auto-reset
+// without risk of pushing stale local data to Firebase.
+function saveLocal() {
   localStorage.setItem('chore-tracker-v3', JSON.stringify(state));
+}
+
+// Writes to localStorage AND Firebase — call only on deliberate user actions
+// (checking a chore, adding a chore, dragging, etc.)
+function saveState() {
+  saveLocal();
 
   // Firebase sync — hook is injected by the <script type="module"> in index.html
   if (typeof window._firebaseSave === 'function') {
-    window._lastSavedState = state;
+    window._lastSavedState = JSON.parse(JSON.stringify(state));
     window._firebaseSave(state).catch(err =>
       console.warn('Firebase save failed:', err)
     );
@@ -130,7 +138,7 @@ function saveState() {
  */
 function loadRemoteState(remote) {
   state = remote;
-  localStorage.setItem('chore-tracker-v3', JSON.stringify(state));
+  saveLocal(); // cache locally but do NOT push back to Firebase — we just got it from there
   renderAll();          // defined in render.js
   updateTabLabels();    // defined in modals.js
 }
@@ -140,6 +148,7 @@ window.loadRemoteState = loadRemoteState;
 
 function autoReset() {
   const today = new Date();
+  let didReset = false;
   Object.values(state.tabs).forEach(freqs => {
     freqs.forEach(f => {
       const last = new Date(f.lastReset);
@@ -147,10 +156,17 @@ function autoReset() {
       if (diffDays >= f.intervalDays) {
         f.chores.forEach(c => (c.done = false));
         f.lastReset = todayStr();
+        didReset = true;
       }
     });
   });
-  saveState();
+  // Use saveLocal during boot so we don't push stale localStorage to Firebase.
+  // If a real reset happened, save to Firebase too so the partner sees it.
+  if (didReset) {
+    saveState(); // push reset to Firebase — this IS intentional state change
+  } else {
+    saveLocal(); // just keep local in sync, don't touch Firebase
+  }
 }
 
 function daysUntilReset(f) {
@@ -169,6 +185,15 @@ function currentFreqs() {
 
 function toggleChore(freqId, choreId) {
   const f = currentFreqs().find(f => f.id === freqId);
+  const c = f && f.chores.find(c => c.id === choreId);
+  if (c) { c.done = !c.done; saveState(); renderAll(); }
+}
+
+// Used by the To Do tab — toggles a chore in any tab, not just the active one
+function toggleChoreGlobal(tabId, freqId, choreId) {
+  const freqs = state.tabs[tabId];
+  if (!freqs) return;
+  const f = freqs.find(f => f.id === freqId);
   const c = f && f.chores.find(c => c.id === choreId);
   if (c) { c.done = !c.done; saveState(); renderAll(); }
 }

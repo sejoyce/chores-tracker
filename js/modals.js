@@ -44,6 +44,8 @@ function switchTab(tabId) {
   activeTab = tabId;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tabId).classList.add('active');
+  // Hide the toolbar on the To Do tab — you can't add frequencies to a computed view
+  document.querySelector('.toolbar').style.display = tabId === 'todo' ? 'none' : '';
   renderAll();
 }
 
