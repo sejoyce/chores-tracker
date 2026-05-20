@@ -491,6 +491,7 @@ button {
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .columns { padding: 0 0.75rem 2rem; gap: 1rem; }
+  /* Extra top padding gives the absolutely-positioned chip room to breathe */
   header   { padding: 5rem 1rem 1rem; }
   .user-chip {
     top: 0.85rem;
@@ -499,6 +500,39 @@ button {
     padding: 0.3rem 0.6rem 0.3rem 0.3rem;
   }
   .user-chip img { width: 22px; height: 22px; }
+
+  /* Tabs: stretch full width and show emoji-only labels */
+  .tabs-wrap {
+    padding: 0 0.75rem;
+  }
+  .tabs {
+    width: 100%;
+    display: flex;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 0.5rem 0.25rem;
+    font-size: 0;        /* hide text */
+    letter-spacing: 0;
+  }
+  .tab-btn .tab-emoji {
+    font-size: 1.2rem;   /* emoji stays visible */
+    margin-right: 0;
+    display: block;
+    text-align: center;
+  }
+  /* Keep the active label readable on mobile */
+  .tab-btn.active {
+    font-size: 0.72rem;
+    padding: 0.5rem 0.5rem;
+  }
+  .tab-btn.active .tab-emoji {
+    display: inline;
+    font-size: 0.9rem;
+    margin-right: 0.25rem;
+  }
+  /* Hide the rename pencil on mobile — use the tab label as the button instead */
+  .tab-rename { display: none !important; }
 }
 
 /* ─── Emoji Picker ────────────────────────────────────────────────────────── */

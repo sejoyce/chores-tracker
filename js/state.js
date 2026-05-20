@@ -272,4 +272,4 @@ function addFrequency({ name, intervalDays, color }) {
 // ─── Initialise ───────────────────────────────────────────────────────────────
 
 let state     = loadState();
-let activeTab = 'shared';
+let activeTab = 'todo';
