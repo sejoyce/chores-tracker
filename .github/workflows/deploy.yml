@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject Firebase config and auth secrets into index.html
+      - name: Inject Firebase config, auth secrets, and cache-buster into index.html
         env:
           FIREBASE_API_KEY:             ${{ secrets.FIREBASE_API_KEY }}
           FIREBASE_AUTH_DOMAIN:         ${{ secrets.FIREBASE_AUTH_DOMAIN }}
@@ -44,6 +44,9 @@ jobs:
           sed -i "s|YOUR_APP_ID|$FIREBASE_APP_ID|g"                           index.html
           sed -i "s|YOUR_EMAIL_1|$ALLOWED_EMAIL_1|g"                          index.html
           sed -i "s|YOUR_EMAIL_2|$ALLOWED_EMAIL_2|g"                          index.html
+          # Replace CACHE_BUST with the short git SHA so browsers always fetch
+          # fresh JS/CSS after every deploy — fixes stale cache on iOS Safari
+          sed -i "s|CACHE_BUST|${{ github.sha }}|g"                           index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
