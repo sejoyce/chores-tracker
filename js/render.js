@@ -9,6 +9,9 @@
 
 function renderAll() {
   autoReset();
+  // Always sync tab labels from current state — prevents stale localStorage
+  // names from persisting after Firebase loads the real values.
+  if (typeof updateTabLabels === 'function') updateTabLabels();
 
   const container = document.getElementById('columns');
   container.innerHTML = '';

@@ -37,8 +37,12 @@ function switchTab(tabId) {
 }
 
 function updateTabLabels() {
-  document.getElementById('tab-p1-label').textContent = state.names.p1;
-  document.getElementById('tab-p2-label').textContent = state.names.p2;
+  // Fall back to '…' while Firebase is still loading so tabs are never blank
+  // or stuck showing old 'Person 1' / 'Person 2' placeholder text.
+  const l1 = document.getElementById('tab-p1-label');
+  const l2 = document.getElementById('tab-p2-label');
+  if (l1) l1.textContent = state.names.p1 || '…';
+  if (l2) l2.textContent = state.names.p2 || '…';
   const e1 = document.getElementById('tab-p1-emoji');
   const e2 = document.getElementById('tab-p2-emoji');
   if (e1) e1.textContent = state.names.p1emoji || '👤';

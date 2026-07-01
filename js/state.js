@@ -92,7 +92,7 @@ function makeDefaultFreqs(prefix) {
 }
 
 const DEFAULT_STATE = {
-  names: { p1: 'Person 1', p2: 'Person 2', p1emoji: '👤', p2emoji: '👤' },
+  names: { p1: '', p2: '', p1emoji: '👤', p2emoji: '👤' },
   tabs: {
     shared: makeDefaultFreqs('shared'),
     p1:     makeDefaultFreqs('p1'),
@@ -104,7 +104,7 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const raw = localStorage.getItem('chore-tracker-v3');
+    const raw = localStorage.getItem('chore-tracker-v4');
     if (raw) return JSON.parse(raw);
   } catch (e) {
     console.warn('Failed to load state from localStorage:', e);
@@ -115,7 +115,7 @@ function loadState() {
 // Writes only to localStorage — safe to call during boot/auto-reset
 // without risk of pushing stale local data to Firebase.
 function saveLocal() {
-  localStorage.setItem('chore-tracker-v3', JSON.stringify(state));
+  localStorage.setItem('chore-tracker-v4', JSON.stringify(state));
 }
 
 // Writes to localStorage AND Firebase — call only on deliberate user actions
