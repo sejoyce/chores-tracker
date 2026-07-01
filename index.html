@@ -237,70 +237,83 @@
       signOut(auth);
     });
 
-    // Auth state drives app visibility
-    window._firebaseReady = new Promise((resolve) => {
-      onAuthStateChanged(auth, (user) => {
-        if (!user) {
-          // Not signed in — show auth screen, hide app
-          document.getElementById('auth-screen').style.display = 'flex';
-          document.getElementById('app').style.display = 'none';
-          resolve(null);
-          return;
-        }
+    // ── Auth state ───────────────────────────────────────────────────────────
+    // Track whether we've booted the app yet. onAuthStateChanged can fire
+    // multiple times (e.g. token refresh), so we only boot once.
+    let appBooted = false;
+    let firestoreUnsub = null;
 
-        // Check allow-list
-        if (!ALLOWED_EMAILS.includes(user.email)) {
-          signOut(auth);
-          const el = document.getElementById('auth-error');
-          el.textContent = `${user.email} is not authorised to access this app.`;
-          el.style.display = 'block';
-          resolve(null);
-          return;
-        }
+    function bootApp(remoteState) {
+      if (appBooted) return;
+      appBooted = true;
+      window._appBootedByFirebase = true;
+      if (remoteState) {
+        state = remoteState;
+        localStorage.setItem('chore-tracker-v4', JSON.stringify(state));
+      }
+      if (typeof checkSetup === 'function') checkSetup();
+      if (typeof renderAll === 'function') renderAll();
+    }
 
-        // Authorised — show app, update user chip
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        document.getElementById('user-name').textContent   = user.displayName || user.email;
-        const avatar = document.getElementById('user-avatar');
-        if (user.photoURL) { avatar.src = user.photoURL; avatar.style.display = 'inline'; }
-        else { avatar.style.display = 'none'; }
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Not signed in — show auth screen, hide app, tear down any listener
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+        if (firestoreUnsub) { firestoreUnsub(); firestoreUnsub = null; }
+        // Reset boot flag so re-login works correctly
+        appBooted = false;
+        return;
+      }
 
-        // ── Firestore ────────────────────────────────────────────────────────
+      // Check allow-list
+      if (!ALLOWED_EMAILS.includes(user.email)) {
+        signOut(auth);
+        const el = document.getElementById('auth-error');
+        el.textContent = `${user.email} is not authorised to access this app.`;
+        el.style.display = 'block';
+        return;
+      }
 
-        window._firebaseSave = async (stateObj) => {
-          const raw = JSON.stringify(stateObj);
-          window._lastSavedRaw = raw;
-          await setDoc(docRef, { data: raw });
-        };
+      // Authorised — show app, update user chip
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('user-name').textContent = user.displayName || user.email;
+      const avatar = document.getElementById('user-avatar');
+      if (user.photoURL) { avatar.src = user.photoURL; avatar.style.display = 'inline'; }
+      else { avatar.style.display = 'none'; }
 
-        // Resolve with initial snapshot, then keep listening
-        let resolved = false;
-        const unsub = onSnapshot(docRef, (snap) => {
-          if (!snap.exists()) {
-            if (!resolved) { resolved = true; resolve(null); }
-            return;
+      // ── Firestore ──────────────────────────────────────────────────────────
+
+      window._firebaseSave = async (stateObj) => {
+        const raw = JSON.stringify(stateObj);
+        window._lastSavedRaw = raw;
+        await setDoc(docRef, { data: raw });
+      };
+
+      // Load initial state from Firestore, then switch to live listener.
+      // We use getDocFromServer for the first load to guarantee fresh data
+      // (not a cached/offline copy), then hand off to onSnapshot for updates.
+      getDocFromServer(docRef).then((snap) => {
+        const remoteState = snap.exists() ? JSON.parse(snap.data().data) : null;
+        if (remoteState) window._lastSavedRaw = JSON.stringify(remoteState);
+
+        // Boot the app with real Firebase data
+        bootApp(remoteState);
+
+        // Now attach the live listener for subsequent updates from partner
+        if (firestoreUnsub) firestoreUnsub();
+        firestoreUnsub = onSnapshot(docRef, (snap) => {
+          if (!snap.exists()) return;
+          const rawRemote = snap.data().data;
+          if (rawRemote !== window._lastSavedRaw) {
+            window._lastSavedRaw = rawRemote;
+            if (typeof loadRemoteState === "function") loadRemoteState(JSON.parse(rawRemote));
           }
-          const raw = snap.data().data;
-          if (!resolved) {
-            resolved = true;
-            window._lastSavedRaw = raw;
-            resolve(JSON.parse(raw));
-            // Switch to live listener after first load
-            unsub();
-            onSnapshot(docRef, (snap) => {
-              if (!snap.exists()) return;
-              const rawRemote = snap.data().data;
-              if (rawRemote !== window._lastSavedRaw) {
-                window._lastSavedRaw = rawRemote;
-                if (typeof loadRemoteState === "function") loadRemoteState(JSON.parse(rawRemote));
-              }
-            });
-          }
-        }, (err) => {
-          console.error("Firestore error:", err);
-          if (!resolved) { resolved = true; resolve(null); }
         });
+      }).catch((err) => {
+        console.error("Firestore initial load failed:", err);
+        bootApp(null); // Fall back to local state on error
       });
     });
   }
@@ -312,14 +325,23 @@
 <script src="js/render.js?v=CACHE_BUST"></script>
 <script src="js/modals.js?v=CACHE_BUST"></script>
 <script>
-  (window._firebaseReady || Promise.resolve(null)).then((remoteState) => {
-    if (remoteState) {
-      state = remoteState;
-      localStorage.setItem('chore-tracker-v3', JSON.stringify(state));
-    }
-    checkSetup();
-    renderAll();
-  });
+  // In local-only mode (Firebase not configured), _firebaseReady is already
+  // set to Promise.resolve(null) and the app boots here.
+  // In Firebase mode, bootApp() inside onAuthStateChanged handles booting
+  // directly once real data arrives — this block is skipped.
+  if (window._firebaseReady && !window._appBootedByFirebase) {
+    window._firebaseReady.then((remoteState) => {
+      // Only run if Firebase module didn't already boot the app
+      if (typeof renderAll === 'function' && !window._appBootedByFirebase) {
+        if (remoteState) {
+          state = remoteState;
+          localStorage.setItem('chore-tracker-v4', JSON.stringify(state));
+        }
+        checkSetup();
+        renderAll();
+      }
+    });
+  }
 </script>
 
 </body>
