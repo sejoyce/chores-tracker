@@ -136,9 +136,9 @@
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc }
+  import { getFirestore, doc, onSnapshot, setDoc, enableNetwork, disableNetwork, getDocFromServer }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -168,6 +168,55 @@
     const db     = getFirestore(app);
     const auth   = getAuth(app);
     const docRef = doc(db, "chores", "shared-state");
+
+    // Explicitly persist the session in IndexedDB so sign-in survives closing
+    // the browser/app entirely, not just refreshing the page. Without this,
+    // some browsers (especially iOS Safari) fall back to a shorter-lived
+    // session and prompt for sign-in more often than necessary.
+    setPersistence(auth, browserLocalPersistence).catch(err =>
+      console.warn("Could not set auth persistence:", err)
+    );
+
+    // ── Reconnect on resume ─────────────────────────────────────────────────
+    // iOS Safari aggressively suspends background tabs, which can silently
+    // kill Firestore's underlying connection. The SDK doesn't always notice
+    // on its own, leaving onSnapshot listeners stuck on stale data and
+    // writes failing quietly. Forcing a network cycle when the tab becomes
+    // visible again makes the SDK re-establish a fresh connection.
+    let reconnecting = false;
+    async function reconnectFirestore() {
+      if (reconnecting) return;
+      reconnecting = true;
+      try {
+        await disableNetwork(db);
+        await enableNetwork(db);
+        console.log("Firestore connection refreshed after resume.");
+
+        // Force a direct server read so the UI updates immediately,
+        // rather than waiting for the listener to catch up on its own.
+        const snap = await getDocFromServer(docRef);
+        if (snap.exists()) {
+          const raw = snap.data().data;
+          if (raw !== window._lastSavedRaw) {
+            window._lastSavedRaw = raw;
+            if (typeof loadRemoteState === "function") loadRemoteState(JSON.parse(raw));
+          }
+        }
+      } catch (err) {
+        console.warn("Firestore reconnect failed:", err);
+      } finally {
+        reconnecting = false;
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reconnectFirestore();
+    });
+    // pageshow fires on iOS when restoring from the back-forward cache,
+    // which visibilitychange doesn't always catch.
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) reconnectFirestore();
+    });
 
     // ── Auth ────────────────────────────────────────────────────────────────
 
